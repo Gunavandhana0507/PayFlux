@@ -1,0 +1,48 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: payflux-backend
+  datasource:
+    url: ${PAYFLUX_DB_URL:jdbc:mysql://localhost:3306/payflux?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${PAYFLUX_DB_USER:payflux}
+    password: ${PAYFLUX_DB_PASSWORD:payflux}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: false
+  jackson:
+    default-property-inclusion: non_null
+
+payflux:
+  checkout-base-url: ${PAYFLUX_CHECKOUT_BASE_URL:http://localhost:5173}
+  cors:
+    allowed-origins: http://localhost:5173,http://127.0.0.1:5173
+  jwt:
+    # Override in any real deployment: PAYFLUX_JWT_SECRET must be >= 32 chars.
+    secret: ${PAYFLUX_JWT_SECRET:payflux-local-development-secret-key-change-me}
+    expiry-minutes: 720
+  order:
+    expiry-minutes: 15
+  mock-processor:
+    # SUCCESS | FAILURE | TIMEOUT | RANDOM - default outcome when the request
+    # does not carry an explicit simulateOutcome.
+    default-outcome: SUCCESS
+    latency-ms: 250
+    success-rate: 0.85
+  fraud:
+    high-amount-threshold: 50000
+    very-high-amount-threshold: 200000
+    failed-attempt-window-minutes: 10
+    failed-attempt-threshold: 3
+    medium-risk-score: 30
+    high-risk-score: 70
+
+logging:
+  level:
+    com.payflux: INFO
