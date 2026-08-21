@@ -1,4 +1,3 @@
-```markdown
 # PayFlux
 
 **A full-stack payment gateway prototype with explainable, ML-based fraud-risk detection.**
@@ -69,21 +68,19 @@ This project is under active development.
 
 ## Repository Structure
 
-```
-PayFlux/
-├── frontend/           # React + Vite frontend (customer, merchant, and admin UIs)
-│   ├── src/
-│   │   ├── components/ui/   # Shared design-system components
-│   │   ├── lib/api.ts       # Axios client
-│   │   └── ...
-│   └── package.json
-├── backend/             # Spring Boot backend
-│   ├── src/
-│   └── pom.xml
-├── docs/                 # SRS, ER diagram, DFDs, and other project documentation
-├── docker-compose.yml    # Local MySQL for backend development
-└── README.md
-```
+    PayFlux/
+    ├── frontend/           # React + Vite frontend (customer, merchant, and admin UIs)
+    │   ├── src/
+    │   │   ├── components/ui/   # Shared design-system components
+    │   │   ├── lib/api.ts       # Axios client
+    │   │   └── ...
+    │   └── package.json
+    ├── backend/             # Spring Boot backend
+    │   ├── src/
+    │   └── pom.xml
+    ├── docs/                 # SRS, ER diagram, DFDs, and other project documentation
+    ├── docker-compose.yml    # Local MySQL for backend development
+    └── README.md
 
 ## Getting Started
 
