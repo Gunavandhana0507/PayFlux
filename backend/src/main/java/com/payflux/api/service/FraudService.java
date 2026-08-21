@@ -70,7 +70,10 @@ public class FraudService {
         long failedAttempts = customerEmail.isBlank()
                 ? 0
                 : paymentRepository.countRecentByCustomerEmailAndStatuses(
-                        customerEmail, List.of(PaymentStatus.FAILED, PaymentStatus.REJECTED), windowStart);
+                        order.getMerchant().getId(),
+                        customerEmail,
+                        List.of(PaymentStatus.FAILED, PaymentStatus.REJECTED),
+                        windowStart);
         long customerOrderCount = customerEmail.isBlank()
                 ? 0
                 : orderRepository.countByMerchantIdAndCustomerEmailIgnoreCase(
@@ -79,7 +82,9 @@ public class FraudService {
         boolean deviceSeenBefore = device != null
                 && !device.isBlank()
                 && !customerEmail.isBlank()
-                && paymentRepository.countByCustomerEmailAndDevice(customerEmail, device, payment.getId()) > 0;
+                && paymentRepository.countByCustomerEmailAndDevice(
+                                order.getMerchant().getId(), customerEmail, device, payment.getId())
+                        > 0;
 
         List<RiskFactorDto> factors = new ArrayList<>();
         int score = 0;

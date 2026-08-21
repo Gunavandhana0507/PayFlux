@@ -28,11 +28,13 @@ public interface PaymentRepository extends JpaRepository<Payment, String> {
     @Query(
             """
             select count(p) from Payment p
-            where lower(p.order.customerEmail) = lower(:email)
+            where p.order.merchant.id = :merchantId
+              and lower(p.order.customerEmail) = lower(:email)
               and p.status in :statuses
               and p.createdAt >= :since
             """)
     long countRecentByCustomerEmailAndStatuses(
+            @Param("merchantId") String merchantId,
             @Param("email") String email,
             @Param("statuses") Collection<PaymentStatus> statuses,
             @Param("since") Instant since);
@@ -40,11 +42,13 @@ public interface PaymentRepository extends JpaRepository<Payment, String> {
     @Query(
             """
             select count(p) from Payment p
-            where lower(p.order.customerEmail) = lower(:email)
+            where p.order.merchant.id = :merchantId
+              and lower(p.order.customerEmail) = lower(:email)
               and p.deviceFingerprint = :fingerprint
               and p.id <> :excludeId
             """)
     long countByCustomerEmailAndDevice(
+            @Param("merchantId") String merchantId,
             @Param("email") String email,
             @Param("fingerprint") String fingerprint,
             @Param("excludeId") String excludeId);
