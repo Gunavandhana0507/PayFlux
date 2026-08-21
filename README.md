@@ -114,13 +114,61 @@ npm run dev
 
 The app runs at `http://localhost:5173` and calls the backend directly.
 
+### Run without Docker
+
+```bash
+cd backend
+mvn spring-boot:run -Dspring-boot.run.profiles=h2
+```
+
+Uses an in-memory H2 database in MySQL compatibility mode.
+
+### Smoke-test the API
+
+```bash
+bash scripts/smoke.sh
+```
+
+Registers a merchant, walks a medium-risk payment through OTP verification, submits fraud
+feedback, processes a partial refund, and checks that a very high-value payment is rejected.
+
+### Manual end-to-end flow
+
+1. Sign up at `/signup` with the merchant KYC fields — this logs you into `/dashboard`.
+2. Create an order (try `60000` INR to trip the risk rules) and open its checkout link.
+3. Pay on `/pay/:orderId`. Medium risk asks for an OTP — use `123456`.
+4. Open the transaction from `/dashboard/transactions` to see the score, the contributing
+   factors and the evaluated features.
+5. Submit **Confirm Fraud** or **Mark as False Positive**; the verdict is stored against the
+   original feature set and shown on reload.
+6. Refund the captured payment in full or in part; refunds settle asynchronously
+   (`PENDING -> PROCESSING -> PROCESSED`).
+
 ## Environment Variables
 
 | Variable | Location | Description |
 |---|---|---|
-| `VITE_API_URL` | `frontend/.env` | Base URL of the backend API (e.g. `http://localhost:8080`) |
-| `SPRING_DATASOURCE_URL` | `backend/src/main/resources/application.yml` | MySQL connection string (defaults to the local Docker Compose instance) |
-| `JWT_SECRET` | `backend/src/main/resources/application.yml` | Secret used to sign JWTs (set your own value for local development) |
+| `VITE_API_BASE_URL` | `frontend/.env` (see `.env.example`) | Base URL of the backend API (defaults to `http://localhost:8080`) |
+| `PAYFLUX_DB_URL` | backend environment | MySQL connection string (defaults to the local Docker Compose instance) |
+| `PAYFLUX_DB_USER` / `PAYFLUX_DB_PASSWORD` | backend environment | Database credentials (default `payflux` / `payflux`) |
+| `PAYFLUX_JWT_SECRET` | backend environment | Secret used to sign JWTs (set your own value for local development) |
+| `PAYFLUX_CHECKOUT_BASE_URL` | backend environment | Base URL used to build hosted checkout links (defaults to `http://localhost:5173`) |
+
+## Risk Rules (Phase 1 placeholder)
+
+| Rule | Weight |
+|---|---|
+| Amount above the high-value threshold (50,000) | 35 |
+| Amount above the very-high threshold (200,000) | 55 |
+| 3+ failed attempts in the last 10 minutes | 30 |
+| At least one recent failed attempt | 10 |
+| Device not seen before for this customer | 15 |
+| First order from this customer | 10 |
+| Payment attempted between 01:00-05:00 UTC | 5 |
+
+Score `>= 70` is HIGH (rejected and flagged), `>= 30` is MEDIUM (OTP step-up), otherwise LOW.
+Thresholds and weights are configurable under `payflux.fraud.*` in
+`backend/src/main/resources/application.yml`.
 
 ## Documentation
 
