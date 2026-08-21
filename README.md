@@ -1,43 +1,110 @@
 # PayFlux
 
-Intelligent payment gateway prototype: React + Spring Boot + MySQL, with a rule-based fraud
-engine that returns the contributing factors behind every risk decision (placeholder for the
-ML service described in the SRS).
+**A full-stack payment gateway prototype with explainable, ML-based fraud-risk detection.**
 
-```
-/backend    Spring Boot 3 API (Java 17, Maven, Spring Security + JWT, Spring Data JPA)
-/frontend   React 18 + Vite + TypeScript app (Tailwind, React Router, Recharts, Axios)
-/scripts    smoke.sh - end-to-end API walkthrough
-```
+PayFlux is an academic Project-Based Learning (PBL) project that demonstrates how a modern payment gateway works end to end — from merchant order creation through simulated payment processing, fraud-risk scoring, refunds, and merchant analytics. It is a prototype built for learning purposes and does not process real financial transactions.
 
-## Run it locally
+---
 
-### 1. MySQL
+## Table of Contents
+
+- [Overview](#overview)
+- [Key Features](#key-features)
+- [What Makes PayFlux Different](#what-makes-payflux-different)
+- [Tech Stack](#tech-stack)
+- [Project Status](#project-status)
+- [Repository Structure](#repository-structure)
+- [Getting Started](#getting-started)
+- [Environment Variables](#environment-variables)
+- [Documentation](#documentation)
+- [Scope & Disclaimer](#scope--disclaimer)
+- [Roadmap](#roadmap)
+
+---
+
+## Overview
+
+PayFlux supports three user roles:
+
+- **Merchant** — registers with KYC details, creates payment orders, monitors transactions and refunds, and reviews fraud alerts.
+- **Customer** — opens a payment page for an order, selects a payment method, and completes a simulated payment.
+- **Admin** — platform-level oversight of merchants, transactions, and fraud alerts across the system (in progress).
+
+Every payment attempt is scored for fraud risk (Low / Medium / High) before it is authorized. Unlike a plain risk-score display, PayFlux shows *why* a transaction was flagged and lets merchants feed their own judgment back into the system — this is the project's primary differentiator.
+
+## Key Features
+
+- Merchant onboarding with KYC fields and JWT authentication
+- Order creation, listing, retrieval, auto-expiry, and idempotent creation
+- Simulated payments across Card, UPI, Net Banking, and Wallet methods
+- Fraud-risk scoring with Low / Medium / High classification
+- A defined payment state machine governing all status transitions
+- Full and partial refunds
+- Merchant, Customer, and Admin-facing UI surfaces
+
+## What Makes PayFlux Different
+
+- **Explainable risk output** — flagged transactions show the specific contributing factors behind the score (e.g. unusually high amount for this customer, multiple recent failed attempts, new device) instead of a bare number or color badge.
+- **Merchant feedback loop** — merchants can mark a flagged transaction as "Confirmed Fraud" or "False Positive." This feedback is logged against the transaction's original feature set, laying the groundwork for the fraud model to be retrained on each merchant's own corrections rather than staying static.
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | React 18, Vite, TypeScript, Tailwind CSS, React Router, Recharts, Axios |
+| Backend | Java 17, Spring Boot 3, Spring Security (JWT), Spring Data JPA |
+| Database | MySQL 8.0 |
+| Fraud Detection | Rule-based scoring engine (Phase 1 placeholder); Python/Scikit-learn model planned |
+| Tooling | Maven, Docker Compose, Git/GitHub, Postman |
+
+## Project Status
+
+This project is under active development.
+
+- [ ] **Frontend + Backend Phase 1** — scaffolding, design system, auth, orders, payments, refunds, rule-based fraud stub with explainability, merchant feedback endpoint
+- [ ] **Backend Phase 2** — webhooks, settlement
+- [ ] **Backend Phase 3** — card vault/tokenization, full admin dashboard, rate limiting
+- [ ] **ML fraud model** — real Scikit-learn model trained on a transaction dataset, retrained using merchant feedback
+
+## Repository Structure
+
+    PayFlux/
+    ├── frontend/           # React + Vite frontend (customer, merchant, and admin UIs)
+    │   ├── src/
+    │   │   ├── components/ui/   # Shared design-system components
+    │   │   ├── lib/api.ts       # Axios client
+    │   │   └── ...
+    │   └── package.json
+    ├── backend/             # Spring Boot backend
+    │   ├── src/
+    │   └── pom.xml
+    ├── docs/                 # SRS, ER diagram, DFDs, and other project documentation
+    ├── docker-compose.yml    # Local MySQL for backend development
+    └── README.md
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18+ and npm
+- Java 17+ and Maven
+- Docker (for local MySQL)
+- Git
+
+### Run the backend
 
 ```bash
-docker compose up -d
-```
+# Start MySQL
+docker-compose up -d
 
-Starts MySQL 8 on `localhost:3306` with database/user/password `payflux`.
-
-### 2. Backend (http://localhost:8080)
-
-```bash
+# Run the backend
 cd backend
 mvn spring-boot:run
 ```
 
-Schema is created automatically (`ddl-auto: update`). Overridable settings:
-`PAYFLUX_DB_URL`, `PAYFLUX_DB_USER`, `PAYFLUX_DB_PASSWORD`, `PAYFLUX_JWT_SECRET`,
-`PAYFLUX_CHECKOUT_BASE_URL`.
+The API runs at `http://localhost:8080`.
 
-Run without Docker/MySQL using the in-memory profile:
-
-```bash
-cd backend && mvn spring-boot:run -Dspring-boot.run.profiles=h2
-```
-
-### 3. Frontend (http://localhost:5173)
+### Run the frontend
 
 ```bash
 cd frontend
@@ -45,26 +112,31 @@ npm install
 npm run dev
 ```
 
-`VITE_API_BASE_URL` (see `.env.example`) points the app at the API; it defaults to
-`http://localhost:8080`.
+The app runs at `http://localhost:5173` and calls the backend directly.
 
-Production build / lint:
+### Run without Docker
 
 ```bash
-cd frontend && npm run build && npm run lint
+cd backend
+mvn spring-boot:run -Dspring-boot.run.profiles=h2
 ```
 
-### 4. API-only smoke test
+Uses an in-memory H2 database in MySQL compatibility mode.
+
+### Smoke-test the API
 
 ```bash
 bash scripts/smoke.sh
 ```
 
-## Manual end-to-end flow
+Registers a merchant, walks a medium-risk payment through OTP verification, submits fraud
+feedback, processes a partial refund, and checks that a very high-value payment is rejected.
 
-1. Sign up at `/signup` with the merchant KYC fields, which logs you into `/dashboard`.
+### Manual end-to-end flow
+
+1. Sign up at `/signup` with the merchant KYC fields — this logs you into `/dashboard`.
 2. Create an order (try `60000` INR to trip the risk rules) and open its checkout link.
-3. Pay on `/pay/:orderId` with any method. Medium risk asks for an OTP - use `123456`.
+3. Pay on `/pay/:orderId`. Medium risk asks for an OTP — use `123456`.
 4. Open the transaction from `/dashboard/transactions` to see the score, the contributing
    factors and the evaluated features.
 5. Submit **Confirm Fraud** or **Mark as False Positive**; the verdict is stored against the
@@ -72,23 +144,56 @@ bash scripts/smoke.sh
 6. Refund the captured payment in full or in part; refunds settle asynchronously
    (`PENDING -> PROCESSING -> PROCESSED`).
 
-## Risk rules (placeholder for the ML service)
+## Environment Variables
+
+| Variable | Location | Description |
+|---|---|---|
+| `VITE_API_BASE_URL` | `frontend/.env` (see `.env.example`) | Base URL of the backend API (defaults to `http://localhost:8080`) |
+| `PAYFLUX_DB_URL` | backend environment | MySQL connection string (defaults to the local Docker Compose instance) |
+| `PAYFLUX_DB_USER` / `PAYFLUX_DB_PASSWORD` | backend environment | Database credentials (default `payflux` / `payflux`) |
+| `PAYFLUX_JWT_SECRET` | backend environment | Secret used to sign JWTs (set your own value for local development) |
+| `PAYFLUX_CHECKOUT_BASE_URL` | backend environment | Base URL used to build hosted checkout links (defaults to `http://localhost:5173`) |
+
+## Risk Rules (Phase 1 placeholder)
 
 | Rule | Weight |
-| --- | --- |
+|---|---|
 | Amount above the high-value threshold (50,000) | 35 |
 | Amount above the very-high threshold (200,000) | 55 |
 | 3+ failed attempts in the last 10 minutes | 30 |
 | At least one recent failed attempt | 10 |
-| Device not seen before | 15 |
+| Device not seen before for this customer | 15 |
 | First order from this customer | 10 |
 | Payment attempted between 01:00-05:00 UTC | 5 |
 
 Score `>= 70` is HIGH (rejected and flagged), `>= 30` is MEDIUM (OTP step-up), otherwise LOW.
-Thresholds and weights live under `payflux.fraud.*` in `backend/src/main/resources/application.yml`.
+Thresholds and weights are configurable under `payflux.fraud.*` in
+`backend/src/main/resources/application.yml`.
 
-## Not in this phase
+## Documentation
 
-Webhooks, settlement, card vault/tokenization, rate limiting, cross-merchant admin tooling and
-the real Python/scikit-learn scoring service are intentionally out of scope; `/admin` is a
-layout stub.
+- **Software Requirements Specification (SRS)** — full functional and non-functional requirements, IEEE-format
+- **Literature Review** — survey of fraud-detection features across payment gateways in use in India, and the research gap PayFlux addresses
+- **Entity-Relationship Diagram** — database schema
+- **Data Flow Diagrams (Level 0 & 1)** — system-level and process-level data flow
+- **System Architecture Diagram** — layer-by-layer component breakdown
+- **Payment State Machine, Activity, and Sequence Diagrams** — payment and refund lifecycle detail
+
+All of the above live in `/docs`.
+
+## Scope & Disclaimer
+
+PayFlux is built strictly for academic demonstration:
+
+- All payments are **simulated** — no real card numbers, CVVs, UPI PINs, or bank credentials are ever collected or stored.
+- The system does **not** connect to real banking or card-network infrastructure.
+- The current fraud-detection engine is a rule-based placeholder; it produces a risk score and explanatory factors but does not use a trained ML model yet, and does not claim to determine, with certainty, whether any transaction is fraudulent.
+- Security- and compliance-oriented design choices (JWT auth, planned tokenization, planned HMAC-signed webhooks) are implemented as design-discipline exercises appropriate to an academic prototype, not as certified production controls.
+
+## Roadmap
+
+- [ ] Complete backend Phases 2–3
+- [ ] Replace the rule-based fraud stub with a trained Scikit-learn model
+- [ ] Use logged merchant feedback (Confirmed Fraud / False Positive) to retrain the fraud model
+- [ ] Database Design and System Design documents
+- [ ] End-to-end testing and demo preparation
