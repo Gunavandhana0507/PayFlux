@@ -52,6 +52,10 @@ public class OrderEntity {
     @Column(length = 512)
     private String description;
 
+    /** Free-form merchant notes carried on the order (SRS REQ-ORD-1). */
+    @Column(length = 1024)
+    private String notes;
+
     private String customerName;
 
     @Column(length = 190)

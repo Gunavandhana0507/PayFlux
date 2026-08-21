@@ -47,19 +47,28 @@ public class OrderService {
         order.setCurrency(request.currency() == null ? "INR" : request.currency().toUpperCase());
         order.setReceipt(request.receipt());
         order.setDescription(request.description());
+        order.setNotes(request.notes());
         order.setCustomerName(request.customerName());
         order.setCustomerEmail(request.customerEmail());
         order.setCustomerPhone(request.customerPhone());
         order.setIdempotencyKey(idempotencyKey == null || idempotencyKey.isBlank() ? null : idempotencyKey);
-        order.setExpiresAt(
-                Instant.now().plus(properties.getOrder().getExpiryMinutes(), ChronoUnit.MINUTES));
+        long expiryMinutes = request.expiryMinutes() == null || request.expiryMinutes() <= 0
+                ? properties.getOrder().getExpiryMinutes()
+                : request.expiryMinutes();
+        order.setExpiresAt(Instant.now().plus(expiryMinutes, ChronoUnit.MINUTES));
         orderRepository.save(order);
         return toResponse(order);
     }
 
     @Transactional(readOnly = true)
-    public Page<OrderEntity> listForMerchant(String merchantId, int page, int size) {
-        return orderRepository.findByMerchantIdOrderByCreatedAtDesc(merchantId, PageRequest.of(page, size));
+    public Page<OrderEntity> listForMerchant(
+            String merchantId, OrderStatus status, Instant from, Instant to, int page, int size) {
+        var pageable = PageRequest.of(page, size);
+        if (status == null && from == null && to == null) {
+            return orderRepository.findByMerchantIdOrderByCreatedAtDesc(merchantId, pageable);
+        }
+        return orderRepository.search(
+                merchantId, status, from == null ? Instant.EPOCH : from, to == null ? Instant.now() : to, pageable);
     }
 
     @Transactional

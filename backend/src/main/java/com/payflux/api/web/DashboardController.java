@@ -57,7 +57,7 @@ public class DashboardController {
                 captured = captured.add(payment.getAmount());
                 successCount++;
             }
-            if (payment.getStatus() == PaymentStatus.FAILED || payment.getStatus() == PaymentStatus.TIMED_OUT) {
+            if (payment.getStatus() == PaymentStatus.FAILED || payment.getStatus() == PaymentStatus.REJECTED) {
                 failedCount++;
             }
             refunded = refunded.add(payment.getRefundedAmount());

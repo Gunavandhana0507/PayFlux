@@ -7,10 +7,15 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.UuidGenerator;
@@ -37,9 +42,16 @@ public class FraudAnalysis {
     @Column(nullable = false, length = 16)
     private RiskLevel riskLevel;
 
-    /** ALLOW | STEP_UP | REVIEW - what the gateway did with this score. */
+    /** ALLOW | VERIFY | REJECT - what the gateway did with this score (SRS 4.4). */
     @Column(nullable = false, length = 32)
     private String decision;
+
+    /** Probabilistic label the model reports, never a certain fraud determination (REQ-FRD-8). */
+    @Column(nullable = false, length = 32)
+    private String prediction;
+
+    @Column(nullable = false, length = 32)
+    private String analysisStatus = "COMPLETED";
 
     @Column(nullable = false, length = 32)
     private String modelVersion;
@@ -49,11 +61,12 @@ public class FraudAnalysis {
     private String factorsJson;
 
     /**
-     * JSON object with the feature values the score was computed from. Persisted so
-     * merchant feedback can later be joined to the original features for retraining.
+     * The feature values the score was computed from. Persisted as rows so merchant
+     * feedback can later be joined to the original features for retraining.
      */
-    @Column(nullable = false, columnDefinition = "TEXT")
-    private String featuresJson;
+    @OneToMany(mappedBy = "analysis", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("position asc")
+    private List<FraudFeature> features = new ArrayList<>();
 
     @Column(nullable = false)
     private Instant createdAt = Instant.now();

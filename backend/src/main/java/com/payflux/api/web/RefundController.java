@@ -25,6 +25,6 @@ public class RefundController {
     public PageResponse<RefundResponse> list(
             @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
         var merchant = currentUserService.requireMerchant();
-        return PageResponse.of(refundService.listForMerchant(merchant.getId(), page, size), RefundResponse::from);
+        return PageResponse.of(refundService.listForMerchant(merchant.getId(), page, size), r -> r);
     }
 }

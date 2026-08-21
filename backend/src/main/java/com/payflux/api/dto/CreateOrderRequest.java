@@ -11,6 +11,8 @@ public record CreateOrderRequest(
         @Size(min = 3, max = 3) String currency,
         String receipt,
         String description,
+        String notes,
+        Integer expiryMinutes,
         String customerName,
         @Email String customerEmail,
         String customerPhone) {}

@@ -3,18 +3,21 @@ package com.payflux.api.domain;
 import java.util.Set;
 
 /**
- * Payment state machine. Allowed transitions are declared on each state, and
- * {@link #canTransitionTo(PaymentStatus)} is the single source of truth used by
- * the payment service before any status change is persisted.
+ * Payment State Machine from SRS section 4.3 (REQ-PAY-5):
+ * CREATED -> INITIATED -> FRAUD_CHECK -> {AUTHORIZED | VERIFICATION_REQUIRED | REJECTED}
+ * -> PROCESSING -> {CAPTURED | FAILED} -> {PARTIALLY_REFUNDED | REFUNDED}.
+ * Any transition not declared here is rejected by the payment service.
  */
 public enum PaymentStatus {
+    CREATED,
     INITIATED,
+    FRAUD_CHECK,
+    AUTHORIZED,
+    VERIFICATION_REQUIRED,
+    REJECTED,
     PROCESSING,
-    REQUIRES_VERIFICATION,
     CAPTURED,
     FAILED,
-    TIMED_OUT,
-    CANCELLED,
     PARTIALLY_REFUNDED,
     REFUNDED;
 
@@ -28,12 +31,15 @@ public enum PaymentStatus {
 
     private Set<PaymentStatus> allowedTargets() {
         return switch (this) {
-            case INITIATED -> Set.of(PROCESSING, FAILED, CANCELLED, TIMED_OUT);
-            case PROCESSING -> Set.of(REQUIRES_VERIFICATION, CAPTURED, FAILED, TIMED_OUT);
-            case REQUIRES_VERIFICATION -> Set.of(PROCESSING, FAILED, CANCELLED, TIMED_OUT);
+            case CREATED -> Set.of(INITIATED, FAILED);
+            case INITIATED -> Set.of(FRAUD_CHECK, FAILED);
+            case FRAUD_CHECK -> Set.of(AUTHORIZED, VERIFICATION_REQUIRED, REJECTED);
+            case VERIFICATION_REQUIRED -> Set.of(AUTHORIZED, REJECTED);
+            case AUTHORIZED -> Set.of(PROCESSING);
+            case PROCESSING -> Set.of(CAPTURED, FAILED);
             case CAPTURED -> Set.of(PARTIALLY_REFUNDED, REFUNDED);
             case PARTIALLY_REFUNDED -> Set.of(PARTIALLY_REFUNDED, REFUNDED);
-            case FAILED, TIMED_OUT, CANCELLED, REFUNDED -> Set.of();
+            case REJECTED, FAILED, REFUNDED -> Set.of();
         };
     }
 }

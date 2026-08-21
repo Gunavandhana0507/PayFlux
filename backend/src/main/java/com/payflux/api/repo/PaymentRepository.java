@@ -23,6 +23,8 @@ public interface PaymentRepository extends JpaRepository<Payment, String> {
 
     Optional<Payment> findByIdAndOrderMerchantId(String id, String merchantId);
 
+    Optional<Payment> findByOrderIdAndIdempotencyKey(String orderId, String idempotencyKey);
+
     @Query(
             """
             select count(p) from Payment p

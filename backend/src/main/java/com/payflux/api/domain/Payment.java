@@ -11,6 +11,7 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.math.BigDecimal;
 import java.time.Instant;
 import lombok.Getter;
@@ -18,7 +19,14 @@ import lombok.Setter;
 import org.hibernate.annotations.UuidGenerator;
 
 @Entity
-@Table(name = "payment", indexes = {@Index(name = "idx_payment_order", columnList = "order_id")})
+@Table(
+        name = "payment",
+        indexes = {@Index(name = "idx_payment_order", columnList = "order_id")},
+        uniqueConstraints = {
+            @UniqueConstraint(
+                    name = "uk_payment_order_idempotency",
+                    columnNames = {"order_id", "idempotency_key"})
+        })
 @Getter
 @Setter
 public class Payment {
@@ -38,7 +46,11 @@ public class Payment {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 32)
-    private PaymentStatus status = PaymentStatus.INITIATED;
+    private PaymentStatus status = PaymentStatus.CREATED;
+
+    /** Client-supplied X-Idempotency-Key (SRS REQ-PAY-6), unique per order. */
+    @Column(name = "idempotency_key", length = 100)
+    private String idempotencyKey;
 
     @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal amount;

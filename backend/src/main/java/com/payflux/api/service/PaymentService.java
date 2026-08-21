@@ -62,7 +62,15 @@ public class PaymentService {
     }
 
     @Transactional
-    public PublicPaymentResponse initiate(OrderEntity order, InitiatePaymentRequest request, String ipAddress) {
+    public PublicPaymentResponse initiate(
+            OrderEntity order, InitiatePaymentRequest request, String ipAddress, String idempotencyKey) {
+        if (idempotencyKey != null && !idempotencyKey.isBlank()) {
+            var existing = paymentRepository.findByOrderIdAndIdempotencyKey(order.getId(), idempotencyKey);
+            if (existing.isPresent()) {
+                Payment payment = existing.get();
+                return toPublicResponse(payment, nextActionFor(payment), payment.getProcessorMessage());
+            }
+        }
         if (order.getStatus() == OrderStatus.PAID) {
             throw ApiException.conflict("This order has already been paid");
         }
@@ -77,26 +85,39 @@ public class PaymentService {
         payment.setDeviceFingerprint(request.deviceFingerprint());
         payment.setIpAddress(ipAddress);
         payment.setSimulateOutcome(request.simulateOutcome());
+        payment.setIdempotencyKey(idempotencyKey == null || idempotencyKey.isBlank() ? null : idempotencyKey);
         applyInstrument(payment, request);
         paymentRepository.save(payment);
-        log(payment, null, PaymentStatus.INITIATED, "Payment initiated at checkout", "CUSTOMER");
+        log(payment, null, PaymentStatus.CREATED, "Payment record created", "SYSTEM");
+        transition(payment, PaymentStatus.INITIATED, "Payment initiated at checkout", "CUSTOMER");
 
         order.setStatus(OrderStatus.ATTEMPTED);
         order.setUpdatedAt(Instant.now());
         orderRepository.save(order);
 
+        transition(payment, PaymentStatus.FRAUD_CHECK, "Running fraud risk assessment", "SYSTEM");
         FraudAnalysis analysis = fraudService.analyze(payment);
 
-        transition(payment, PaymentStatus.PROCESSING, "Risk check complete: " + analysis.getRiskLevel(), "SYSTEM");
-
-        if ("STEP_UP".equals(analysis.getDecision())) {
-            transition(
-                    payment,
-                    PaymentStatus.REQUIRES_VERIFICATION,
-                    "High risk (score %d) - additional verification required".formatted(analysis.getRiskScore()),
-                    "RISK_ENGINE");
-            return toPublicResponse(
-                    payment, "OTP_VERIFICATION", "Additional verification required. Use OTP " + MOCK_OTP + ".");
+        // SRS 4.4 / business rules: High risk is rejected outright, Medium needs verification.
+        switch (analysis.getDecision()) {
+            case "REJECT" -> {
+                payment.setFailureCode("FRAUD_REJECTED");
+                payment.setFailureReason(
+                        "Rejected by risk checks (risk score %d)".formatted(analysis.getRiskScore()));
+                transition(payment, PaymentStatus.REJECTED, payment.getFailureReason(), "RISK_ENGINE");
+                return toPublicResponse(payment, null, payment.getFailureReason());
+            }
+            case "VERIFY" -> {
+                transition(
+                        payment,
+                        PaymentStatus.VERIFICATION_REQUIRED,
+                        "Medium risk (score %d) - additional verification required".formatted(analysis.getRiskScore()),
+                        "RISK_ENGINE");
+                return toPublicResponse(
+                        payment, "OTP_VERIFICATION", "Additional verification required. Use OTP " + MOCK_OTP + ".");
+            }
+            default -> transition(
+                    payment, PaymentStatus.AUTHORIZED, "Low risk (score %d) - authorized".formatted(analysis.getRiskScore()), "RISK_ENGINE");
         }
 
         return authorizeWithProcessor(payment);
@@ -107,7 +128,7 @@ public class PaymentService {
         Payment payment = paymentRepository
                 .findById(paymentId)
                 .orElseThrow(() -> ApiException.notFound("Payment not found"));
-        if (payment.getStatus() != PaymentStatus.REQUIRES_VERIFICATION) {
+        if (payment.getStatus() != PaymentStatus.VERIFICATION_REQUIRED) {
             throw ApiException.badRequest("This payment is not awaiting verification");
         }
         if (!MOCK_OTP.equals(otp)) {
@@ -116,16 +137,18 @@ public class PaymentService {
             if (payment.getAttemptCount() >= 3) {
                 payment.setFailureCode("OTP_ATTEMPTS_EXCEEDED");
                 payment.setFailureReason("Verification failed after 3 attempts");
-                transition(payment, PaymentStatus.FAILED, payment.getFailureReason(), "SYSTEM");
+                // REQ-FRD-5: failed verification results in rejection.
+                transition(payment, PaymentStatus.REJECTED, payment.getFailureReason(), "SYSTEM");
                 return toPublicResponse(payment, null, payment.getFailureReason());
             }
             throw ApiException.badRequest("Incorrect verification code");
         }
-        transition(payment, PaymentStatus.PROCESSING, "Verification successful", "CUSTOMER");
+        transition(payment, PaymentStatus.AUTHORIZED, "Verification successful", "CUSTOMER");
         return authorizeWithProcessor(payment);
     }
 
     private PublicPaymentResponse authorizeWithProcessor(Payment payment) {
+        transition(payment, PaymentStatus.PROCESSING, "Sent to payment processor", "SYSTEM");
         payment.setAttemptCount(payment.getAttemptCount() + 1);
         ProcessorResult result = processor.authorize(payment, payment.getSimulateOutcome());
         payment.setProcessorReference(result.reference());
@@ -149,9 +172,10 @@ public class PaymentService {
                 return toPublicResponse(payment, null, result.message());
             }
             case TIMEOUT -> {
+                // The state machine has no timeout state; a processor timeout terminates as FAILED.
                 payment.setFailureCode(result.failureCode());
                 payment.setFailureReason(result.message());
-                transition(payment, PaymentStatus.TIMED_OUT, result.message(), "PROCESSOR");
+                transition(payment, PaymentStatus.FAILED, result.message(), "PROCESSOR");
                 return toPublicResponse(payment, null, result.message());
             }
         }
@@ -229,8 +253,7 @@ public class PaymentService {
         Payment payment = paymentRepository
                 .findById(paymentId)
                 .orElseThrow(() -> ApiException.notFound("Payment not found"));
-        String nextAction = payment.getStatus() == PaymentStatus.REQUIRES_VERIFICATION ? "OTP_VERIFICATION" : null;
-        return toPublicResponse(payment, nextAction, payment.getProcessorMessage());
+        return toPublicResponse(payment, nextActionFor(payment), payment.getProcessorMessage());
     }
 
     @Transactional(readOnly = true)
@@ -300,6 +323,10 @@ public class PaymentService {
                         : analysis.getMerchantFeedback().name(),
                 payment.getCreatedAt(),
                 payment.getCapturedAt());
+    }
+
+    private String nextActionFor(Payment payment) {
+        return payment.getStatus() == PaymentStatus.VERIFICATION_REQUIRED ? "OTP_VERIFICATION" : null;
     }
 
     private PublicPaymentResponse toPublicResponse(Payment payment, String nextAction, String message) {

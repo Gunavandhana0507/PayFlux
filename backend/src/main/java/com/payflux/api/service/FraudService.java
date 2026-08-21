@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.payflux.api.config.PayFluxProperties;
 import com.payflux.api.domain.FraudAnalysis;
+import com.payflux.api.domain.FraudFeature;
 import com.payflux.api.domain.MerchantFeedback;
 import com.payflux.api.domain.OrderEntity;
 import com.payflux.api.domain.Payment;
@@ -25,6 +26,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -68,7 +70,7 @@ public class FraudService {
         long failedAttempts = customerEmail.isBlank()
                 ? 0
                 : paymentRepository.countRecentByCustomerEmailAndStatuses(
-                        customerEmail, List.of(PaymentStatus.FAILED, PaymentStatus.TIMED_OUT), windowStart);
+                        customerEmail, List.of(PaymentStatus.FAILED, PaymentStatus.REJECTED), windowStart);
         long customerOrderCount = customerEmail.isBlank()
                 ? 0
                 : orderRepository.countByMerchantIdAndCustomerEmailIgnoreCase(
@@ -144,11 +146,13 @@ public class FraudService {
         if (factors.isEmpty()) {
             factors.add(new RiskFactorDto("NO_SIGNALS", "No risk signals triggered for this payment", 0));
         }
+        // SRS 4.4: Low proceeds, Medium needs extra verification, High is rejected and flagged.
         String decision = switch (level) {
-            case HIGH -> "STEP_UP";
-            case MEDIUM -> "REVIEW";
+            case HIGH -> "REJECT";
+            case MEDIUM -> "VERIFY";
             case LOW -> "ALLOW";
         };
+        String prediction = level == RiskLevel.LOW ? "LIKELY_LEGITIMATE" : "LIKELY_FRAUDULENT";
 
         Map<String, Object> features = new LinkedHashMap<>();
         features.put("amount", amount);
@@ -160,8 +164,11 @@ public class FraudService {
         features.put("failed_attempt_window_minutes", config.getFailedAttemptWindowMinutes());
         features.put("device_fingerprint", device);
         features.put("device_seen_before", deviceSeenBefore);
+        features.put("device_risk_score", deviceSeenBefore ? 0 : 15);
         features.put("ip_address", payment.getIpAddress());
+        features.put("location_risk_score", isPrivateIp(payment.getIpAddress()) ? 0 : 10);
         features.put("hour_of_day_utc", hourOfDay);
+        features.put("unusual_transaction", amount.compareTo(config.getHighAmountThreshold()) > 0);
 
         FraudAnalysis analysis = fraudAnalysisRepository
                 .findByPaymentId(payment.getId())
@@ -170,10 +177,22 @@ public class FraudService {
         analysis.setRiskScore(score);
         analysis.setRiskLevel(level);
         analysis.setDecision(decision);
+        analysis.setPrediction(prediction);
+        analysis.setAnalysisStatus("COMPLETED");
         analysis.setModelVersion(MODEL_VERSION);
         analysis.setFactorsJson(writeJson(factors));
-        analysis.setFeaturesJson(writeJson(features));
         analysis.setCreatedAt(Instant.now());
+
+        analysis.getFeatures().clear();
+        int position = 0;
+        for (Map.Entry<String, Object> entry : features.entrySet()) {
+            FraudFeature feature = new FraudFeature();
+            feature.setAnalysis(analysis);
+            feature.setName(entry.getKey());
+            feature.setValue(entry.getValue() == null ? null : String.valueOf(entry.getValue()));
+            feature.setPosition(position++);
+            analysis.getFeatures().add(feature);
+        }
         return fraudAnalysisRepository.save(analysis);
     }
 
@@ -208,9 +227,15 @@ public class FraudService {
                 analysis.getRiskScore(),
                 analysis.getRiskLevel().name(),
                 analysis.getDecision(),
+                analysis.getPrediction(),
                 analysis.getModelVersion(),
                 readJson(analysis.getFactorsJson(), new TypeReference<List<RiskFactorDto>>() {}),
-                readJson(analysis.getFeaturesJson(), new TypeReference<Map<String, Object>>() {}),
+                analysis.getFeatures().stream()
+                        .collect(Collectors.toMap(
+                                FraudFeature::getName,
+                                feature -> feature.getValue() == null ? "" : feature.getValue(),
+                                (a, b) -> a,
+                                LinkedHashMap::new)),
                 analysis.getCreatedAt(),
                 analysis.getMerchantFeedback() == null
                         ? null
@@ -218,6 +243,14 @@ public class FraudService {
                 analysis.getFeedbackNote(),
                 analysis.getFeedbackByEmail(),
                 analysis.getFeedbackAt());
+    }
+
+    private boolean isPrivateIp(String ip) {
+        return ip == null
+                || ip.startsWith("127.")
+                || ip.startsWith("10.")
+                || ip.startsWith("192.168.")
+                || "0:0:0:0:0:0:0:1".equals(ip);
     }
 
     private String writeJson(Object value) {
