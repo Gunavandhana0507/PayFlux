@@ -8,7 +8,6 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Lob;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import java.time.Instant;
@@ -46,16 +45,14 @@ public class FraudAnalysis {
     private String modelVersion;
 
     /** JSON array of {code, description, weight} - the contributing risk factors. */
-    @Lob
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String factorsJson;
 
     /**
      * JSON object with the feature values the score was computed from. Persisted so
      * merchant feedback can later be joined to the original features for retraining.
      */
-    @Lob
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String featuresJson;
 
     @Column(nullable = false)
