@@ -6,6 +6,7 @@ import com.payflux.api.domain.OrderEntity;
 import com.payflux.api.domain.OrderStatus;
 import com.payflux.api.dto.CreateOrderRequest;
 import com.payflux.api.dto.OrderResponse;
+import com.payflux.api.dto.PublicOrderResponse;
 import com.payflux.api.repo.OrderRepository;
 import com.payflux.api.web.ApiException;
 import java.time.Instant;
@@ -84,6 +85,12 @@ public class OrderService {
     public OrderEntity getPublic(String orderId) {
         OrderEntity order = orderRepository.findById(orderId).orElseThrow(() -> ApiException.notFound("Order not found"));
         return expireIfDue(order);
+    }
+
+    /** Maps inside the transaction so the lazy merchant association is initialized. */
+    @Transactional
+    public PublicOrderResponse getPublicResponse(String orderId) {
+        return PublicOrderResponse.from(getPublic(orderId));
     }
 
     public OrderResponse toResponse(OrderEntity order) {

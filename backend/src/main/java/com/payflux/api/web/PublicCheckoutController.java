@@ -31,7 +31,7 @@ public class PublicCheckoutController {
 
     @GetMapping("/orders/{orderId}")
     public PublicOrderResponse getOrder(@PathVariable String orderId) {
-        return PublicOrderResponse.from(orderService.getPublic(orderId));
+        return orderService.getPublicResponse(orderId);
     }
 
     @PostMapping("/payments")
