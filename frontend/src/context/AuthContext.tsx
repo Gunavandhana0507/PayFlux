@@ -17,7 +17,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState(() => localStorage.getItem('payflux_token'))
   const [merchant, setMerchant] = useState<MerchantDto | null>(() => {
     const value = localStorage.getItem('payflux_merchant')
-    return value ? JSON.parse(value) as MerchantDto : null
+    return value ? (JSON.parse(value) as MerchantDto) : null
   })
   const [ready, setReady] = useState(false)
 
@@ -26,7 +26,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setReady(true)
       return
     }
-    authApi.me()
+    authApi
+      .me()
       .then(({ data }) => {
         setMerchant(data)
         localStorage.setItem('payflux_merchant', JSON.stringify(data))
@@ -40,31 +41,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .finally(() => setReady(true))
   }, [token])
 
-  const value = useMemo<AuthContextValue>(() => ({
-    token,
-    merchant,
-    ready,
-    login: async (payload) => {
-      const { data } = await authApi.login(payload)
-      localStorage.setItem('payflux_token', data.token)
-      localStorage.setItem('payflux_merchant', JSON.stringify(data.merchant))
-      setToken(data.token)
-      setMerchant(data.merchant)
-    },
-    register: async (payload) => {
-      const { data } = await authApi.register(payload)
-      localStorage.setItem('payflux_token', data.token)
-      localStorage.setItem('payflux_merchant', JSON.stringify(data.merchant))
-      setToken(data.token)
-      setMerchant(data.merchant)
-    },
-    logout: () => {
-      localStorage.removeItem('payflux_token')
-      localStorage.removeItem('payflux_merchant')
-      setToken(null)
-      setMerchant(null)
-    },
-  }), [merchant, ready, token])
+  const value = useMemo<AuthContextValue>(
+    () => ({
+      token,
+      merchant,
+      ready,
+      login: async (payload) => {
+        const { data } = await authApi.login(payload)
+        localStorage.setItem('payflux_token', data.token)
+        localStorage.setItem('payflux_merchant', JSON.stringify(data.merchant))
+        setToken(data.token)
+        setMerchant(data.merchant)
+      },
+      register: async (payload) => {
+        const { data } = await authApi.register(payload)
+        localStorage.setItem('payflux_token', data.token)
+        localStorage.setItem('payflux_merchant', JSON.stringify(data.merchant))
+        setToken(data.token)
+        setMerchant(data.merchant)
+      },
+      logout: () => {
+        localStorage.removeItem('payflux_token')
+        localStorage.removeItem('payflux_merchant')
+        setToken(null)
+        setMerchant(null)
+      },
+    }),
+    [merchant, ready, token],
+  )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

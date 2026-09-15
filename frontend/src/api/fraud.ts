@@ -1,5 +1,10 @@
 import { api } from '../lib/api'
-import type { FraudAnalysisDto, MerchantFeedback, PageResponse, PaymentSummaryDto } from '../types/api'
+import type {
+  FraudAnalysisDto,
+  MerchantFeedback,
+  PageResponse,
+  PaymentSummaryDto,
+} from '../types/api'
 
 export const fraudApi = {
   list: (params: { page?: number; size?: number }) =>

@@ -31,7 +31,46 @@ export function LoginPage() {
       const friendly = getFriendlyError(error)
       setMessage(friendly.message)
       setErrors(friendly.fieldErrors)
-    } finally { setLoading(false) }
+    } finally {
+      setLoading(false)
+    }
   }
-  return <div className="mx-auto flex min-h-[calc(100vh-73px)] max-w-md items-center px-5 py-10"><div className="card w-full"><h1 className="text-2xl font-semibold text-slate-900">Welcome back</h1><p className="mt-1 text-sm text-slate-500">Sign in to manage your payments.</p>{message && <div className="mt-5 rounded-md bg-rose-50 p-3 text-sm text-rose-700">{message}</div>}<form onSubmit={submit} className="mt-6 space-y-4"><Input label="Email" type="email" value={form.email} error={errors.email} required onChange={(event) => setForm({ ...form, email: event.target.value })} /><Input label="Password" type="password" value={form.password} error={errors.password} required onChange={(event) => setForm({ ...form, password: event.target.value })} /><Button type="submit" loading={loading} className="w-full">Sign in</Button></form><p className="mt-6 text-center text-sm text-slate-500">New to PayFlux? <Link to="/register" className="font-medium text-primary-dark hover:underline">Create an account</Link></p></div></div>
+  return (
+    <div className="mx-auto flex min-h-[calc(100vh-73px)] max-w-md items-center px-5 py-10">
+      <div className="card w-full">
+        <h1 className="text-2xl font-semibold text-slate-900">Welcome back</h1>
+        <p className="mt-1 text-sm text-slate-500">Sign in to manage your payments.</p>
+        {message && (
+          <div className="mt-5 rounded-md bg-rose-50 p-3 text-sm text-rose-700">{message}</div>
+        )}
+        <form onSubmit={submit} className="mt-6 space-y-4">
+          <Input
+            label="Email"
+            type="email"
+            value={form.email}
+            error={errors.email}
+            required
+            onChange={(event) => setForm({ ...form, email: event.target.value })}
+          />
+          <Input
+            label="Password"
+            type="password"
+            value={form.password}
+            error={errors.password}
+            required
+            onChange={(event) => setForm({ ...form, password: event.target.value })}
+          />
+          <Button type="submit" loading={loading} className="w-full">
+            Sign in
+          </Button>
+        </form>
+        <p className="mt-6 text-center text-sm text-slate-500">
+          New to PayFlux?{' '}
+          <Link to="/register" className="font-medium text-primary-dark hover:underline">
+            Create an account
+          </Link>
+        </p>
+      </div>
+    </div>
+  )
 }

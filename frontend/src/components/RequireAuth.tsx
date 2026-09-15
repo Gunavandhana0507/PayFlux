@@ -6,6 +6,7 @@ export function RequireAuth() {
   const { token, ready } = useAuth()
   const location = useLocation()
   if (!ready) return <LoadingSpinner fullPage />
-  if (!token) return <Navigate to={`/login?from=${encodeURIComponent(location.pathname)}`} replace />
+  if (!token)
+    return <Navigate to={`/login?from=${encodeURIComponent(location.pathname)}`} replace />
   return <Outlet />
 }
