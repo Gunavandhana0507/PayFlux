@@ -1,0 +1,6 @@
+import type { FraudAnalysisDto } from '../types/api'
+import { formatMoney } from '../lib/format'
+
+export function RiskFactorsPanel({ analysis }: { analysis: FraudAnalysisDto }) {
+  return <div className="space-y-3"><h3 className="font-medium text-slate-900">Why this was flagged</h3>{analysis.factors.map((factor) => <div key={factor.code} className="flex items-start justify-between gap-4 rounded-md bg-slate-50 p-3 text-sm"><span className="text-slate-700">{factor.description}</span><span className="font-semibold text-rose-600">+{Number(factor.weight).toFixed(2)}</span></div>)}{analysis.features && <details className="rounded-md border border-slate-200 p-3 text-sm"><summary className="cursor-pointer font-medium">View payment signals</summary><dl className="mt-3 grid grid-cols-2 gap-3 text-slate-600"><div><dt>Amount</dt><dd className="font-medium text-slate-900">{formatMoney(analysis.features.amount)}</dd></div><div><dt>Recent attempts</dt><dd className="font-medium text-slate-900">{analysis.features.attemptsLast10Min}</dd></div><div><dt>New device</dt><dd className="font-medium text-slate-900">{analysis.features.newDevice ? 'Yes' : 'No'}</dd></div><div><dt>Unusual transaction</dt><dd className="font-medium text-slate-900">{analysis.features.unusualTransaction ? 'Yes' : 'No'}</dd></div></dl></details>}</div>
+}
