@@ -1,8 +1,11 @@
-node_modules
-dist
-target
+backend/target/
+frontend/node_modules/
+frontend/dist/
+node_modules/
+dist/
+target/
 .env
-.idea
-*.iml
+*.log
+.idea/
+.vscode/
 .DS_Store
-.vscode
