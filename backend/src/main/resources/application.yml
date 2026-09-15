@@ -1,0 +1,29 @@
+server:
+  port: 8080
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/payflux?createDatabaseIfNotExist=true&serverTimezone=UTC}
+    username: ${DB_USER:payflux}
+    password: ${DB_PASSWORD:payflux}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: false
+payflux:
+  jwt:
+    secret: ${JWT_SECRET:change-me-payflux-dev-secret-key-must-be-at-least-32-bytes-long}
+    expiry-minutes: 720
+  cors:
+    allowed-origins: ${CORS_ORIGINS:http://localhost:5173}
+  order:
+    expiry-minutes: 15
+  processor:
+    default-outcome: ${PROCESSOR_OUTCOME:SUCCESS}
+  fraud:
+    high-amount-threshold: 50000
+    very-high-amount-threshold: 100000
+    medium-threshold: 0.40
+    high-threshold: 0.70
