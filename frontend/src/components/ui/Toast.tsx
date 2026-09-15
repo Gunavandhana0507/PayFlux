@@ -28,7 +28,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className={`flex items-center justify-between gap-3 rounded-md px-4 py-3 text-sm text-white shadow-lg ${toast.type === 'success' ? 'bg-emerald-600' : toast.type === 'error' ? 'bg-rose-600' : 'bg-slate-700'}`}
+            className={[
+              'flex items-center justify-between gap-3 rounded-md px-4 py-3 text-sm text-white shadow-lg',
+              toast.type === 'success'
+                ? 'bg-emerald-600'
+                : toast.type === 'error'
+                  ? 'bg-rose-600'
+                  : 'bg-slate-700',
+            ].join(' ')}
           >
             <span>{toast.message}</span>
             <button

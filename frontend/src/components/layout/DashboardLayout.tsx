@@ -37,7 +37,11 @@ export function DashboardLayout() {
       </header>
       <div className="mx-auto flex max-w-[1440px]">
         <aside
-          className={`fixed inset-y-0 left-0 z-30 w-64 border-r border-slate-200 bg-white p-5 transition-transform lg:sticky lg:top-0 lg:block lg:h-screen lg:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'}`}
+          className={[
+            'fixed inset-y-0 left-0 z-30 w-64 border-r border-slate-200 bg-white p-5',
+            'transition-transform lg:sticky lg:top-0 lg:block lg:h-screen lg:translate-x-0',
+            open ? 'translate-x-0' : '-translate-x-full',
+          ].join(' ')}
         >
           <div className="mb-10 flex items-center justify-between">
             <Link to="/dashboard" className="text-xl font-bold text-primary-dark">
@@ -55,7 +59,12 @@ export function DashboardLayout() {
                 end={to === '/dashboard'}
                 onClick={() => setOpen(false)}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 border-l-2 px-3 py-2.5 text-sm ${isActive ? 'border-primary bg-primary-light/30 font-medium text-primary-dark' : 'border-transparent text-slate-600 hover:bg-slate-50'}`
+                  [
+                    'flex items-center gap-3 border-l-2 px-3 py-2.5 text-sm',
+                    isActive
+                      ? 'border-primary bg-primary-light/30 font-medium text-primary-dark'
+                      : 'border-transparent text-slate-600 hover:bg-slate-50',
+                  ].join(' ')
                 }
               >
                 <Icon className="h-4 w-4" />

@@ -23,7 +23,12 @@ export function Input({
       </span>
       <input
         {...props}
-        className={`w-full rounded-md border px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 ${error ? 'border-rose-400' : 'border-slate-300'} ${className}`}
+        className={[
+          'w-full rounded-md border px-3 py-2 text-sm outline-none transition',
+          'focus:border-primary focus:ring-2 focus:ring-primary/20',
+          error ? 'border-rose-400' : 'border-slate-300',
+          className,
+        ].join(' ')}
       />
       {hint && !error && <span className="block text-xs text-slate-500">{hint}</span>}
       {error && <span className="block text-xs text-rose-600">{error}</span>}
@@ -48,7 +53,12 @@ export function Select({
       </span>
       <select
         {...props}
-        className={`w-full rounded-md border bg-white px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 ${error ? 'border-rose-400' : 'border-slate-300'} ${className}`}
+        className={[
+          'w-full rounded-md border bg-white px-3 py-2 text-sm outline-none transition',
+          'focus:border-primary focus:ring-2 focus:ring-primary/20',
+          error ? 'border-rose-400' : 'border-slate-300',
+          className,
+        ].join(' ')}
       >
         {children}
       </select>
@@ -74,7 +84,12 @@ export function Textarea({
       </span>
       <textarea
         {...props}
-        className={`w-full rounded-md border px-3 py-2 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 ${error ? 'border-rose-400' : 'border-slate-300'} ${className}`}
+        className={[
+          'w-full rounded-md border px-3 py-2 text-sm outline-none transition',
+          'focus:border-primary focus:ring-2 focus:ring-primary/20',
+          error ? 'border-rose-400' : 'border-slate-300',
+          className,
+        ].join(' ')}
       />
       {hint && !error && <span className="block text-xs text-slate-500">{hint}</span>}
       {error && <span className="block text-xs text-rose-600">{error}</span>}

@@ -20,7 +20,12 @@ export function PaymentMethodPicker({
           type="button"
           key={method}
           onClick={() => onChange(method)}
-          className={`rounded-md border px-3 py-2 text-sm ${value === method ? 'border-primary bg-primary-light/30 text-primary-dark' : 'border-slate-200 bg-white text-slate-600'}`}
+          className={[
+            'rounded-md border px-3 py-2 text-sm',
+            value === method
+              ? 'border-primary bg-primary-light/30 text-primary-dark'
+              : 'border-slate-200 bg-white text-slate-600',
+          ].join(' ')}
         >
           {label}
         </button>

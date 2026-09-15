@@ -25,7 +25,14 @@ export function Button({
     <button
       {...props}
       disabled={loading || props.disabled}
-      className={`inline-flex items-center justify-center gap-2 rounded-md font-medium transition focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-60 ${variants[variant]} ${sizes[size]} ${className}`}
+      className={[
+        'inline-flex items-center justify-center gap-2 rounded-md font-medium transition',
+        'focus:outline-none focus:ring-2 focus:ring-primary/40',
+        'disabled:cursor-not-allowed disabled:opacity-60',
+        variants[variant],
+        sizes[size],
+        className,
+      ].join(' ')}
     >
       {loading && <LoaderCircle className="h-4 w-4 animate-spin" />}
       {children}
