@@ -1,0 +1,12 @@
+import { Link } from 'react-router-dom'
+export function NotFoundPage() {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center px-5 text-center">
+      <h1 className="text-3xl font-semibold text-slate-900">Page not found</h1>
+      <p className="mt-2 text-slate-500">The page you requested does not exist.</p>
+      <Link to="/" className="mt-6 text-primary-dark hover:underline">
+        Return to PayFlux
+      </Link>
+    </div>
+  )
+}
