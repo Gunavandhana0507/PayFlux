@@ -2,6 +2,8 @@ package com.payflux.common;
 
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -14,6 +16,7 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
     @ExceptionHandler(MethodArgumentNotValidException.class)
     ResponseEntity<ApiError> validation(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new LinkedHashMap<>();
@@ -35,6 +38,6 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AccessDeniedException.class)
     ResponseEntity<ApiError> denied() { return ResponseEntity.status(403).body(error("FORBIDDEN", "You do not have permission to perform this action")); }
     @ExceptionHandler(Exception.class)
-    ResponseEntity<ApiError> fallback(Exception ex) { return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error("INTERNAL_ERROR", "Something went wrong on our side")); }
+    ResponseEntity<ApiError> fallback(Exception ex) { log.error("Unhandled API error", ex); return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error("INTERNAL_ERROR", "Something went wrong on our side")); }
     private ApiError error(String code, String message) { return new ApiError(code, message, Map.of()); }
 }
