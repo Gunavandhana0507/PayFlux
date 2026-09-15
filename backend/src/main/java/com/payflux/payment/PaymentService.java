@@ -77,4 +77,17 @@ public class PaymentService {
     private OrderDtos.PaymentSummaryDto summary(Payment p) { var a = fraudAnalysisRepository.findByPaymentId(p.getId()).orElse(null); return new OrderDtos.PaymentSummaryDto(p.getId(), p.getOrder().getId(), p.getAmount(), p.getCurrency(), p.getMethod(), p.getMethodSummary(), p.getStatus(), a == null ? null : a.getRiskLevel(), a == null ? null : a.getRiskScore(), p.getCustomerEmail(), p.getRefundedAmount(), p.getCreatedAt()); }
     private String summary(PaymentDtos.PaymentRequest r) { return switch (r.method()) { case CARD -> "Card •••• " + r.card().number().substring(r.card().number().length() - 4); case UPI -> "UPI " + r.upiId(); case NETBANKING -> "Netbanking " + r.bankCode(); case WALLET -> "Wallet " + r.walletProvider(); }; }
     private void validate(PaymentDtos.PaymentRequest r) {
-        if (r.method() == PaymentMethod.CARD && (r.card() == null || r.card().number() 
+        if (r.method() == PaymentMethod.CARD && (r.card() == null || r.card().number() == null || !r.card().number().matches("[0-9]{13,19}"))) {
+            throw new BusinessRuleException("INVALID_PAYMENT_DETAILS", "Enter a valid card number");
+        }
+        if (r.method() == PaymentMethod.UPI && (r.upiId() == null || !r.upiId().matches("^[A-Za-z0-9_.-]+@[A-Za-z0-9_]+$"))) {
+            throw new BusinessRuleException("INVALID_PAYMENT_DETAILS", "Enter a valid UPI ID");
+        }
+        if (r.method() == PaymentMethod.NETBANKING && (r.bankCode() == null || r.bankCode().isBlank())) {
+            throw new BusinessRuleException("INVALID_PAYMENT_DETAILS", "Enter a bank code");
+        }
+        if (r.method() == PaymentMethod.WALLET && (r.walletProvider() == null || r.walletProvider().isBlank())) {
+            throw new BusinessRuleException("INVALID_PAYMENT_DETAILS", "Enter a wallet provider");
+        }
+    }
+}

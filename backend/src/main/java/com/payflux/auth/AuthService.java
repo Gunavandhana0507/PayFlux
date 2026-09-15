@@ -28,7 +28,7 @@ public class AuthService {
     }
     @Transactional(readOnly = true)
     public AuthDtos.AuthResponse login(AuthDtos.LoginRequest request) {
-        AppUser user = userRepository.findByEmailIgnoreCase(request.email()).orElseThrow(BadCredentialsException::new);
+        AppUser user = userRepository.findByEmailIgnoreCase(request.email()).orElseThrow(() -> new BadCredentialsException("invalid credentials"));
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) throw new BadCredentialsException("invalid credentials");
         Merchant merchant = merchantRepository.findByUserId(user.getId()).orElse(null);
         return new AuthDtos.AuthResponse(jwtUtil.generate(user, merchant), merchant == null ? null : toDto(merchant));
