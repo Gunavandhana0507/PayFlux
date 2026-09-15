@@ -7,8 +7,22 @@ export function getFriendlyError(error: unknown): {
 } {
   if (axios.isAxiosError(error)) {
     const payload = error.response?.data as ApiError | undefined
-    if (payload?.message) {
-      return { message: payload.message, fieldErrors: payload.fieldErrors ?? {} }
+    if (payload?.code) {
+      const messages: Record<string, string> = {
+        UNAUTHORIZED: 'Please sign in to continue.',
+        FORBIDDEN: "You don't have access to this.",
+        VALIDATION_ERROR: 'Check the highlighted fields and try again.',
+        INVALID_CREDENTIALS: 'The email or password is incorrect.',
+        EMAIL_ALREADY_REGISTERED: 'An account with this email already exists.',
+        ORDER_NOT_FOUND: "We couldn't find this payment link.",
+        PAYMENT_NOT_FOUND: "We couldn't find this payment.",
+        ORDER_EXPIRED: 'This payment link has expired.',
+        REFUND_NOT_ALLOWED: 'This payment cannot be refunded right now.',
+      }
+      return {
+        message: messages[payload.code] ?? 'Something went wrong. Please try again.',
+        fieldErrors: payload.fieldErrors ?? {},
+      }
     }
     if (!error.response) {
       return {
