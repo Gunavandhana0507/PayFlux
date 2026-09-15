@@ -24,6 +24,8 @@ export function Modal({
       onMouseDown={onClose}
     >
       <div
+        role="dialog"
+        aria-modal="true"
         className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-lg bg-white p-6 shadow-xl"
         onMouseDown={(event) => event.stopPropagation()}
       >
