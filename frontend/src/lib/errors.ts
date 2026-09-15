@@ -7,7 +7,8 @@ export function getFriendlyError(error: unknown): {
 } {
   if (axios.isAxiosError(error)) {
     const payload = error.response?.data as ApiError | undefined
-    if (payload?.code) {
+    const status = error.response?.status
+    if (payload && status && status >= 400 && status < 500) {
       const messages: Record<string, string> = {
         UNAUTHORIZED: 'Please sign in to continue.',
         FORBIDDEN: "You don't have access to this.",
@@ -20,7 +21,10 @@ export function getFriendlyError(error: unknown): {
         REFUND_NOT_ALLOWED: 'This payment cannot be refunded right now.',
       }
       return {
-        message: messages[payload.code] ?? 'Something went wrong. Please try again.',
+        message:
+          (payload.code && messages[payload.code]) ||
+          payload.message ||
+          'Something went wrong. Please try again.',
         fieldErrors: payload.fieldErrors ?? {},
       }
     }
