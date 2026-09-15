@@ -1,2 +1,7 @@
 package com.payflux.order;
-public enum OrderStatus { CREATED, PAID, EXPIRED }
+
+public enum OrderStatus {
+    CREATED,
+    PAID,
+    EXPIRED
+}

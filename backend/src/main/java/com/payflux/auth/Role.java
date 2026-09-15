@@ -1,2 +1,6 @@
 package com.payflux.auth;
-public enum Role { MERCHANT, ADMIN }
+
+public enum Role {
+    MERCHANT,
+    ADMIN
+}

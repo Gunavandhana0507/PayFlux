@@ -1,2 +1,6 @@
 package com.payflux.fraud;
-public enum AnalysisStatus { COMPLETED, FAILED }
+
+public enum AnalysisStatus {
+    COMPLETED,
+    FAILED
+}

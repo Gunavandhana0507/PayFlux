@@ -12,7 +12,8 @@ import java.util.Arrays;
 @Configuration
 public class CorsConfig {
     @Bean
-    CorsConfigurationSource corsConfigurationSource(@Value("${payflux.cors.allowed-origins}") String origins) {
+    CorsConfigurationSource corsConfigurationSource(
+            @Value("${payflux.cors.allowed-origins}") String origins) {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(Arrays.stream(origins.split(",")).map(String::trim).toList());
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
@@ -23,7 +24,10 @@ public class CorsConfig {
         source.registerCorsConfiguration("/**", config);
         return source;
     }
+
     private static final class Lists {
-        static java.util.List<String> all() { return java.util.List.of("*"); }
+        static java.util.List<String> all() {
+            return java.util.List.of("*");
+        }
     }
 }

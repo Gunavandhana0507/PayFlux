@@ -1,2 +1,7 @@
 package com.payflux.fraud;
-public enum Prediction { LEGITIMATE, SUSPICIOUS, LIKELY_FRAUD }
+
+public enum Prediction {
+    LEGITIMATE,
+    SUSPICIOUS,
+    LIKELY_FRAUD
+}
