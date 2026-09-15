@@ -32,7 +32,7 @@ public class RefundService {
         if (p.getStatus() != PaymentStatus.CAPTURED && p.getStatus() != PaymentStatus.PARTIALLY_REFUNDED) throw new BusinessRuleException("REFUND_NOT_ALLOWED", "Only successful payments can be refunded");
         BigDecimal remaining = p.getAmount().subtract(p.getRefundedAmount()).subtract(pendingAmount(paymentId));
         if (request.amount().compareTo(remaining) > 0) throw new BusinessRuleException("REFUND_EXCEEDS_BALANCE", "Refund amount is more than the remaining ₹" + remaining.setScale(2));
-        Refund r = new Refund(); r.setId(IdGenerator.next("rfnd_")); r.setPayment(p); r.setMerchant(p.getMerchant()); r.setAmount(request.amount()); r.setReason(request.reason()); r.setStatus(RefundStatus.PENDING); return toDto(refundRepository.save(r));
+        Refund r = new Refund(); r.setId(IdGenerator.next("rfnd_")); r.setPayment(p); r.setMerchant(p.getMerchant()); r.setAmount(request.amount()); r.setReason(request.reason()); r.setStatus(RefundStatus.PENDING); r.setCreatedAt(Instant.now()); return toDto(refundRepository.save(r));
     }
     @Transactional(readOnly = true) public BigDecimal pendingAmount(String paymentId) { return refundRepository.findByPaymentId(paymentId).stream().filter(r -> r.getStatus() == RefundStatus.PENDING || r.getStatus() == RefundStatus.PROCESSING).map(Refund::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add); }
     @Transactional(readOnly = true) public java.util.List<RefundDtos.RefundDto> listForPayment(String paymentId) { return refundRepository.findByPaymentId(paymentId).stream().map(this::toDto).toList(); }

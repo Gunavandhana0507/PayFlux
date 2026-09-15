@@ -19,18 +19,19 @@ import java.util.List;
 
 @Service
 public class OrderService {
+    public record CreateResult(OrderDtos.OrderDto dto, boolean created) {}
     private final OrderRepository orderRepository;
     private final PaymentRepository paymentRepository;
     private final AuthFacade authFacade;
     public OrderService(OrderRepository orderRepository, PaymentRepository paymentRepository, AuthFacade authFacade) { this.orderRepository = orderRepository; this.paymentRepository = paymentRepository; this.authFacade = authFacade; }
     @Transactional
-    public OrderDtos.OrderDto create(OrderDtos.CreateOrderRequest request, String key) {
+    public CreateResult create(OrderDtos.CreateOrderRequest request, String key) {
         Merchant merchant = authFacade.currentMerchant();
         if (key != null && !key.isBlank()) {
             var existing = orderRepository.findByMerchantIdAndIdempotencyKey(merchant.getId(), key);
-            if (existing.isPresent()) return toDto(existing.get());
+            if (existing.isPresent()) return new CreateResult(toDto(existing.get()), false);
         }
-        Order order = new Order(); order.setId(IdGenerator.next("ord_")); order.setMerchant(merchant); order.setAmount(request.amount()); order.setCurrency(request.currency() == null ? "INR" : request.currency().toUpperCase()); order.setNotes(request.notes()); order.setCustomerEmail(request.customerEmail()); order.setStatus(OrderStatus.CREATED); order.setExpiresAt(Instant.now().plusSeconds((request.expiresInMinutes() == null ? 15 : request.expiresInMinutes()) * 60L)); order.setIdempotencyKey(key); return toDto(orderRepository.save(order));
+        Order order = new Order(); order.setId(IdGenerator.next("ord_")); order.setMerchant(merchant); order.setAmount(request.amount()); order.setCurrency(request.currency() == null ? "INR" : request.currency().toUpperCase()); order.setNotes(request.notes()); order.setCustomerEmail(request.customerEmail()); order.setStatus(OrderStatus.CREATED); order.setExpiresAt(Instant.now().plusSeconds((request.expiresInMinutes() == null ? 15 : request.expiresInMinutes()) * 60L)); order.setIdempotencyKey(key); return new CreateResult(toDto(orderRepository.save(order)), true);
     }
     @Transactional(readOnly = true)
     public PageResponse<OrderDtos.OrderDto> list(int page, int size) {
